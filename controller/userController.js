@@ -17,8 +17,11 @@ async function register(req,res) {
                          msg: "please provide all required information"})
     }
     try {
-        const [user] = await dbconnection.query ("SELECT username, userid FROM users WHERE username = ? or email = ?",[username,email])
-        // return  res.json({user: user})
+      //  const [user] = await dbconnection.query ("SELECT username, userid FROM users WHERE username = ? or email = ?",[username,email])
+     const result = await dbconnection.query("SELECT username, userid FROM users WHERE username = $1 OR email = $2", [username, email]);
+ 
+     const user = result.rows
+      // return  res.json({user: user})
         if(user.length>0){
             return  res.status(StatusCodes.CONFLICT).json({ 
                                          msg: "user already register"})
@@ -31,8 +34,13 @@ async function register(req,res) {
         //   encrypt thev password
         const salt = await bcrypt.genSalt(10)
        const hashedpassword = await bcrypt.hash(password,salt) 
-        await dbconnection.query("INSERT INTO users (username,firstname ,lastname,email, password)VALUES (?,?,?,?,?)" ,[username,firstname ,lastname,email,  hashedpassword] )
-        return  res.status(StatusCodes.CREATED).json({ 
+     //   await dbconnection.query("INSERT INTO users (username,firstname ,lastname,email, password)VALUES (?,?,?,?,?)" ,[username,firstname ,lastname,email,  hashedpassword] )
+     await dbconnection.query(
+        "INSERT INTO users (username, firstname, lastname, email, password) VALUES ($1, $2, $3, $4, $5)",
+        [username, firstname, lastname, email, hashedpassword]
+      );
+      
+     return  res.status(StatusCodes.CREATED).json({ 
             msg: "User registered successfully"})
     } catch (error) {
         console.log(error.message);
@@ -50,7 +58,10 @@ async function login(req,res) {
         return res.status(StatusCodes.BAD_REQUEST).json({ msg: "Please provide all required fields"});
     }
     try {
-         const [user] = await dbconnection.query ("SELECT username, userid , password FROM users WHERE email = ?",[email])
+       // const [user] = await dbconnection.query("SELECT username, userid, password FROM users WHERE email = ?", [email])
+        const result = await dbconnection.query("SELECT username, userid, password FROM users WHERE email = $1", [email])
+
+        const user = result.rows
 
         if (user.length == 0){
             return res.status(StatusCodes.UNAUTHORIZED).json({ msg: "Invalid username or password"})
@@ -83,8 +94,13 @@ async function login(req,res) {
     }
 }
 
-async function checkUser(req,res) {
-    res.send("check user")
+function checkUser(req,res) {
+    // console.log("req=---", req , "res =====", res);
+    
+    // res.send("check user")
+    const username = req.user.username;
+    const userid = req.user.userid;
+    return res.status(StatusCodes.OK).json({ username, userid });
 }
 
 module.exports = {register,login,checkUser}

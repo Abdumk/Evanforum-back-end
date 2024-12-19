@@ -6,7 +6,8 @@ const crypto = require("crypto");
 async function getAnswer(req, res) {
   const questionid = req.params.question_id;
   try {
-    const [rows] = await dbConnection.query(
+    //  const [rows] = await dbConnection.query(
+    const result = await dbConnection.query(
       `SELECT 
             a.answerid, 
             a.userid AS answer_userid, 
@@ -15,9 +16,10 @@ async function getAnswer(req, res) {
          FROM 
             answers a inner join users u on a.userid = u.userid
          WHERE 
-            a.questionid = ?`,
+            a.questionid = $1`,
       [questionid]
     );
+    const rows = result.rows
     return res.status(StatusCodes.OK).json({rows});
   } catch (err) {
     console.log(err);
@@ -50,7 +52,8 @@ const formattedTimestamp = adjustedDate
   // const answerid = crypto.randomBytes(10).toString("hex");
   try {
     await dbConnection.query(
-      "insert into answers (userid, answer, questionid,createdAt) values ( ?,?,?,?)",
+      // "insert into answers (userid, answer, questionid,createdAt) values ( ?,?,?,?)",
+      "insert into answers (userid, answer, questionid,createdAt) values ( $1,$2,$3,$4)",
       [ userid, answer, questionid,formattedTimestamp]
     );
     return res

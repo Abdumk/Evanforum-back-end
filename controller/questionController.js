@@ -26,8 +26,12 @@ async function postQuestion(req, res) {
   }
   const questionid = crypto.randomBytes(10).toString("hex");
   try {
-    await dbConnection.query(
-      "insert into questions (questionid, userid, title, description, tag,createdAt) values ( ?, ?, ?, ?, ?,?)",
+    // await dbConnection.query(
+    //   "insert into questions (questionid, userid, title, description, tag,createdAt) values ( ?, ?, ?, ?, ?,?)",
+    //   [questionid, userid, title, description, tag, formattedTimestamp]
+    // );
+    await dbconnection.query(
+      "INSERT INTO questions (questionid, userid, title, description, tag, createdAt) VALUES ($1, $2, $3, $4, $5, $6)",
       [questionid, userid, title, description, tag, formattedTimestamp]
     );
     return res
@@ -44,9 +48,11 @@ async function postQuestion(req, res) {
 // get all questions
 async function getAllQuestions(req, res) {
   try {
-    const [questions] =
+    // const [questions] =
+    const result =
       await dbConnection.query(`select q.questionid, q.title, q.description,q.createdAt, u.username from questions q   
      inner join users u on q.userid = u.userid  order by q.createdAt desc`);
+     const questions = result.rows
     return res.status(StatusCodes.OK).json({
       message: questions,
     });
@@ -63,7 +69,8 @@ async function getQuestionAndAnswer(req, res) {
   const questionid = req.params.question_id;
 
   try {
-    const [rows] = await dbConnection.query(
+    // const [rows] = await dbConnection.query(
+    const result = await dbConnection.query(
       `SELECT 
           q.questionid, 
           q.title, 
@@ -82,11 +89,13 @@ async function getQuestionAndAnswer(req, res) {
           LEFT JOIN users u on u.userid = a.userid
           left join users u2 on u2.userid = q.userid
        WHERE 
-          q.questionid = ?
+          q.questionid = $1
           order by a.createdAt desc
           `,
       [questionid]
     );
+
+    const rows = result.rows
 
     // Check if the question exists
     if (rows.length === 0) {
